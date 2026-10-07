@@ -14,6 +14,11 @@ create table if not exists public.results (
 
 alter table public.results enable row level security;
 
+-- Uttryckliga rättigheter, så att det fungerar även när "Automatically expose
+-- new tables" är avstängt. Bara insert; läsning sker via day_stats() nedan.
+revoke all on public.results from anon, authenticated;
+grant insert on public.results to anon, authenticated;
+
 -- Anonyma spelare får bara lägga till rimliga resultat, aldrig läsa eller ändra rader.
 drop policy if exists "insert results" on public.results;
 create policy "insert results" on public.results

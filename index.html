@@ -123,7 +123,6 @@
     font-family: "JetBrains Mono", monospace; font-size: 18px; padding: 13px 6px; text-transform: uppercase; letter-spacing: 1.5px;
   }
   #guess::placeholder, .namebox input::placeholder { color: color-mix(in srgb, var(--pale) 55%, transparent); }
-  .preview { flex: 0 0 54px; border-radius: 12px; border: 1.5px solid var(--blue-line); background: color-mix(in srgb, var(--mid) 55%, transparent); }
   button {
     flex-shrink: 0; border-radius: 12px; padding: 0 26px; font: 600 17px Poppins, sans-serif; color: #fff; cursor: pointer;
     background: hsl(var(--h) 60% 7%); border: 1.5px solid color-mix(in srgb, var(--blue) 35%, transparent);
@@ -162,8 +161,11 @@
   .sliders b { font-family: "JetBrains Mono", monospace; color: var(--fg); text-align: right; }
   .sliders input[type=range] {
     -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 999px; margin: 0;
-    background: var(--track, #888); outline: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+    background: var(--track); outline: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
   }
+  .sliders input[data-ch="0"] { --track: linear-gradient(90deg, #000, #f00); }
+  .sliders input[data-ch="1"] { --track: linear-gradient(90deg, #000, #0f0); }
+  .sliders input[data-ch="2"] { --track: linear-gradient(90deg, #000, #00f); }
   .sliders input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
     background: #fff; border: 3px solid var(--thumb, #000); box-shadow: 0 0 10px rgba(0, 0, 0, .5); cursor: grab;
@@ -313,7 +315,6 @@
   <div id="play">
     <form id="form" autocomplete="off">
       <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false" autocapitalize="characters"></div>
-      <div class="preview" id="preview"></div>
       <button type="submit">Gissa</button>
     </form>
 
@@ -382,7 +383,7 @@
 
   <h3>Tips</h3>
   <ul>
-    <li>Använd <b>reglagen</b>: de skriver koden åt dig, så du kan matcha färgen med ögat.</li>
+    <li>Använd <b>reglagen</b> om du inte kan hex: de skriver koden åt dig. Färgen du blandat syns först när du gissat, så titta på dagens färg och fundera på hur mycket rött, grönt och blått den har.</li>
     <li>Ljus färg ger höga värden, mörk färg låga. Grå färger har tre lika värden.</li>
     <li>Fastnat? Tryck <b>💡 Ledtråd</b> för att se första tecknet i en kanal (högst 3).</li>
   </ul>
@@ -562,32 +563,27 @@ function confetti() {
 }
 
 // --- Inmatning: textfält och reglage hålls i synk ---
+// Reglagen visar bara sin egen kanal (svart → röd/grön/blå), aldrig den blandade färgen:
+// annars kan man matcha dagens färg med ögat utan att tänka.
 const sliders = [...document.querySelectorAll('#sliders input')];
 function current() { return sliders.map(s => +s.value); }
 function paintSliders() {
-  const c = current();
-  sliders.forEach((s, i) => {
-    const lo = [...c], hi = [...c];
-    lo[i] = 0; hi[i] = 255;
-    s.style.setProperty('--track', `linear-gradient(90deg, rgb(${lo}), rgb(${hi}))`);
-    s.style.setProperty('--thumb', `rgb(${c})`);
-    s.nextElementSibling.textContent = pair(c[i]);
+  current().forEach((v, i) => {
+    const c = [0, 0, 0];
+    c[i] = v;
+    sliders[i].style.setProperty('--thumb', `rgb(${c})`);
+    sliders[i].nextElementSibling.textContent = pair(v);
   });
-}
-function setPreview(value) {
-  $('preview').style.background = value.length === 6 ? '#' + value : '';
 }
 sliders.forEach(s => s.addEventListener('input', () => {
   startClock();
   const v = hex(current());
   $('guess').value = v;
-  setPreview(v);
   paintSliders();
 }));
 $('guess').addEventListener('input', e => {
   startClock();
   const v = e.target.value = e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase();
-  setPreview(v);
   if (v.length === 6) { [0, 2, 4].forEach((p, i) => sliders[i].value = parseInt(v.slice(p, p + 2), 16)); paintSliders(); }
 });
 

@@ -10,7 +10,9 @@
 
 ## Statistik med Supabase (valfritt)
 
-Spelet fungerar utan Supabase. Med Supabase visas hur många som spelat idag och fördelningen av antal försök.
+Spelet fungerar utan Supabase. Med Supabase visas hur många som spelat idag, fördelningen av antal försök och dagens snabbaste (topp 10).
+
+`supabase/schema.sql` går att köra flera gånger. Kör den igen efter uppdateringar av spelet, **innan** du mergar, så att databasen har de nya kolumnerna.
 
 1. Skapa ett projekt på [supabase.com](https://supabase.com) (eller använd ett befintligt; flera spel kan dela samma projekt).
 2. **SQL Editor** → klistra in `supabase/schema.sql` → **Run**.

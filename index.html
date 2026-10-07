@@ -3,98 +3,177 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hexle</title>
+<meta name="theme-color" content="#0d0b1a">
+<title>Hexle – dagens färg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f6f5f2; --fg: #1d1d1f; --muted: #6e6e73; --card: #ffffff;
-    --line: #e2e1dc; --hit: #3a9d5d; --near: #d9a521; --far: #c9c8c3;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root { --bg: #141416; --fg: #f2f2f2; --muted: #9a9aa0; --card: #1e1e22; --line: #2e2e33; --far: #3a3a40; }
+    /* Sätts från dagens färg i JS: målfärgen och två nyanser runt den. */
+    --target: #6d28d9; --hue-a: #db2777; --hue-b: #0ea5e9;
+    --bg: #0d0b1a; --fg: #f5f3ff; --muted: rgba(245, 243, 255, .6);
+    --glass: rgba(255, 255, 255, .06); --glass-line: rgba(255, 255, 255, .12);
+    --hit: #22c55e; --near: #f59e0b; --far: rgba(255, 255, 255, .14);
+    color-scheme: dark;
   }
   * { box-sizing: border-box; }
+  html, body { min-height: 100%; }
   body {
     margin: 0; background: var(--bg); color: var(--fg);
-    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    display: flex; justify-content: center; padding: 24px 16px 48px;
+    font-family: "Space Grotesk", system-ui, sans-serif;
+    display: flex; justify-content: center; padding: 28px 16px 56px;
+    overflow-x: hidden;
   }
-  main { width: 100%; max-width: 420px; }
-  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
-  h1 { margin: 0; font-size: 28px; letter-spacing: -0.5px; }
-  h1 span { color: var(--muted); font-weight: 400; }
-  .day { color: var(--muted); font-size: 14px; }
+
+  /* Bakgrund: suddiga färgfläckar i dagens nyanser som sakta driver runt. */
+  .bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .blob { position: absolute; width: 60vmax; height: 60vmax; border-radius: 50%; filter: blur(80px); opacity: .55; }
+  .blob.a { background: var(--target); top: -20vmax; left: -15vmax; animation: drift 22s ease-in-out infinite alternate; }
+  .blob.b { background: var(--hue-a); bottom: -25vmax; right: -20vmax; opacity: .4; animation: drift 28s ease-in-out infinite alternate-reverse; }
+  .blob.c { background: var(--hue-b); top: 35%; left: 45%; width: 40vmax; height: 40vmax; opacity: .3; animation: drift 34s ease-in-out infinite alternate; }
+  @keyframes drift { to { transform: translate(8vmax, 6vmax) scale(1.15); } }
+  .bg::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px);
+    background-size: 22px 22px;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+
+  main { width: 100%; max-width: 440px; position: relative; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
+  h1 {
+    margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -1px;
+    background: linear-gradient(100deg, #fff 10%, var(--hue-a) 55%, var(--hue-b));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  h1 span { color: var(--target); -webkit-text-fill-color: var(--target); filter: brightness(1.6) saturate(1.2); }
+  .day {
+    font-family: "JetBrains Mono", monospace; font-size: 13px; color: var(--muted);
+    padding: 6px 12px; border-radius: 999px; background: var(--glass); border: 1px solid var(--glass-line);
+  }
+
+  .panel {
+    background: var(--glass); border: 1px solid var(--glass-line); border-radius: 24px;
+    padding: 16px; backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, .35);
+  }
+
   .target {
-    height: 160px; border-radius: 16px; border: 1px solid var(--line);
-    display: flex; align-items: flex-end; justify-content: flex-end; padding: 10px 12px;
+    position: relative; height: 170px; border-radius: 18px; background: var(--target);
+    box-shadow: 0 18px 50px -10px var(--target), inset 0 0 0 1px rgba(255,255,255,.15);
+    display: flex; align-items: flex-end; justify-content: space-between; padding: 12px 14px; overflow: hidden;
   }
-  .target small { background: rgba(0,0,0,.35); color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 12px; }
-  .hint { color: var(--muted); font-size: 14px; margin: 12px 0 16px; text-align: center; }
-  .rows { display: grid; gap: 8px; margin-bottom: 16px; }
-  .row { display: grid; grid-template-columns: 40px repeat(3, 1fr); gap: 8px; align-items: center; }
-  .sw { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); }
+  .target::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.28), transparent 45%);
+  }
+  .target small {
+    position: relative; background: rgba(0,0,0,.35); color: #fff; padding: 5px 10px;
+    border-radius: 999px; font-size: 12px; font-weight: 500; backdrop-filter: blur(6px);
+  }
+  .hint { color: var(--muted); font-size: 14px; margin: 14px 0; text-align: center; }
+
+  .rows { display: grid; gap: 8px; margin-bottom: 14px; }
+  .row { display: grid; grid-template-columns: 44px repeat(3, 1fr); gap: 8px; align-items: center; }
+  .sw { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--glass-line); background: rgba(255,255,255,.03); }
   .cell {
-    height: 40px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
+    height: 44px; border-radius: 12px; background: rgba(255,255,255,.03); border: 1px solid var(--glass-line);
     display: flex; align-items: center; justify-content: center; gap: 4px;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 18px; font-weight: 600;
+    font-family: "JetBrains Mono", monospace; font-size: 18px; font-weight: 700;
   }
-  .cell.hit { background: var(--hit); color: #fff; border-color: transparent; }
-  .cell.near { background: var(--near); color: #fff; border-color: transparent; }
-  .cell.far { background: var(--far); border-color: transparent; }
-  .cell .arrow { font-size: 13px; opacity: .9; }
+  .cell.hit  { background: linear-gradient(160deg, #34d399, var(--hit)); border-color: transparent; color: #04210f; box-shadow: 0 6px 18px -6px var(--hit); }
+  .cell.near { background: linear-gradient(160deg, #fcd34d, var(--near)); border-color: transparent; color: #2a1800; box-shadow: 0 6px 18px -6px var(--near); }
+  .cell.far  { background: var(--far); border-color: transparent; }
+  .cell .arrow { font-size: 12px; opacity: .8; }
   .row.empty .cell { color: transparent; }
+  .row.fresh .cell, .row.fresh .sw { animation: flip .5s ease both; }
+  .row.fresh > :nth-child(2) { animation-delay: .1s; }
+  .row.fresh > :nth-child(3) { animation-delay: .2s; }
+  .row.fresh > :nth-child(4) { animation-delay: .3s; }
+  @keyframes flip { from { transform: rotateX(90deg); opacity: 0; } to { transform: none; opacity: 1; } }
+  .row.shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
   form { display: flex; gap: 8px; }
   .input {
-    min-width: 0;
-    flex: 1; display: flex; align-items: center; background: var(--card);
-    border: 1px solid var(--line); border-radius: 12px; padding: 0 12px;
+    flex: 1; min-width: 0; display: flex; align-items: center;
+    background: rgba(0,0,0,.25); border: 1px solid var(--glass-line); border-radius: 14px; padding: 0 12px;
+    transition: border-color .2s, box-shadow .2s;
   }
-  .input span { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 20px; }
+  .input:focus-within { border-color: rgba(255,255,255,.35); box-shadow: 0 0 0 4px rgba(255,255,255,.06); }
+  .input span { color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 20px; }
   input {
     flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg);
-    font-family: ui-monospace, Menlo, monospace; font-size: 20px; padding: 12px 4px; text-transform: uppercase;
+    font-family: "JetBrains Mono", monospace; font-size: 20px; padding: 13px 4px; text-transform: uppercase; letter-spacing: 2px;
   }
+  input::placeholder { color: rgba(255,255,255,.25); }
+  .preview { flex: 0 0 50px; border-radius: 14px; border: 1px dashed var(--glass-line); transition: background .15s; }
   button {
-    flex-shrink: 0;
-    border: 0; border-radius: 12px; padding: 0 20px; font-size: 16px; font-weight: 600;
-    background: var(--fg); color: var(--bg); cursor: pointer;
+    flex-shrink: 0; border: 0; border-radius: 14px; padding: 0 22px; font: 700 16px "Space Grotesk", sans-serif;
+    color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, var(--hue-a), var(--target) 50%, var(--hue-b));
+    box-shadow: 0 8px 24px -8px var(--hue-a); transition: transform .1s, filter .2s;
   }
-  .preview { flex: 0 0 48px; border-radius: 12px; border: 1px solid var(--line); }
-  .msg { min-height: 20px; text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
-  .result { display: none; text-align: center; margin-top: 16px; }
-  .result.show { display: block; }
-  .result pre { font-size: 18px; line-height: 1.3; margin: 8px 0 12px; }
-  .stats { max-width: 280px; margin: 20px auto 0; text-align: left; font-size: 13px; color: var(--muted); }
+  button:hover { filter: brightness(1.15); }
+  button:active { transform: scale(.97); }
+
+  .msg { min-height: 20px; text-align: center; color: var(--muted); font-size: 14px; margin-top: 12px; }
+  .msg strong { color: var(--fg); }
+  .result { display: none; text-align: center; margin-top: 14px; }
+  .result.show { display: block; animation: rise .5s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  .result h2 { margin: 4px 0 6px; font-size: 22px; }
+  .answer { display: inline-flex; align-items: center; gap: 8px; font-family: "JetBrains Mono", monospace; color: var(--muted); }
+  .answer i { width: 16px; height: 16px; border-radius: 5px; background: var(--target); box-shadow: 0 0 12px var(--target); }
+  .result pre { font-size: 18px; line-height: 1.3; margin: 14px 0; font-family: "JetBrains Mono", monospace; }
+  .result button { padding: 13px 24px; }
+
+  .stats { max-width: 300px; margin: 22px auto 0; text-align: left; font-size: 13px; color: var(--muted); }
   .stats p { text-align: center; margin: 0 0 10px; }
-  .bar { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; margin: 4px 0; }
-  .bar div { background: var(--far); color: var(--fg); border-radius: 4px; padding: 2px 6px; text-align: right; min-width: 24px; font-weight: 600; }
-  .bar.me div { background: var(--hit); color: #fff; }
-  .legend { display: flex; justify-content: center; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 20px; }
-  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+  .bar { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; margin: 5px 0; font-family: "JetBrains Mono", monospace; }
+  .bar div { background: var(--far); color: var(--fg); border-radius: 6px; padding: 3px 8px; text-align: right; min-width: 28px; font-weight: 700; }
+  .bar.me div { background: linear-gradient(90deg, #34d399, var(--hit)); color: #04210f; }
+
+  .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; font-size: 12px; color: var(--muted); margin-top: 18px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+  .confetti { position: fixed; top: -12px; width: 10px; height: 14px; border-radius: 2px; pointer-events: none; z-index: 10; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translate(var(--dx), 110vh) rotate(var(--rot)); opacity: .8; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .blob, .row.fresh .cell, .row.fresh .sw, .result.show { animation: none; }
+  }
 </style>
 </head>
 <body>
+<div class="bg"><div class="blob a"></div><div class="blob b"></div><div class="blob c"></div></div>
 <main>
   <header>
     <h1>Hexle<span>#</span></h1>
     <div class="day" id="day"></div>
   </header>
 
-  <div class="target" id="target"><small>Dagens färg</small></div>
-  <p class="hint">Gissa färgens hexkod. 6 försök.</p>
+  <div class="panel">
+    <div class="target" id="target"><small>Dagens färg</small></div>
+    <p class="hint">Gissa färgens hexkod. 6 försök.</p>
 
-  <div class="rows" id="rows"></div>
+    <div class="rows" id="rows"></div>
 
-  <form id="form" autocomplete="off">
-    <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false"></div>
-    <div class="preview" id="preview"></div>
-    <button type="submit">Gissa</button>
-  </form>
-  <div class="msg" id="msg"></div>
+    <form id="form" autocomplete="off">
+      <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false" autocapitalize="characters"></div>
+      <div class="preview" id="preview"></div>
+      <button type="submit">Gissa</button>
+    </form>
+    <div class="msg" id="msg"></div>
 
-  <div class="result" id="result">
-    <pre id="share"></pre>
-    <button type="button" id="copy" style="padding:12px 20px">Kopiera resultat</button>
-    <div class="stats" id="stats"></div>
+    <div class="result" id="result">
+      <h2 id="headline"></h2>
+      <div class="answer"><i></i><span id="answer"></span></div>
+      <pre id="share"></pre>
+      <button type="button" id="copy">Kopiera resultat</button>
+      <div class="stats" id="stats"></div>
+    </div>
   </div>
 
   <div class="legend">
@@ -127,12 +206,26 @@ const target = [0, 0, 0].map(() => Math.floor(rand() * 256));
 const hex = c => c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
 
 const $ = id => document.getElementById(id);
-$('day').textContent = '#' + dayNo;
-$('target').style.background = '#' + hex(target);
+$('day').textContent = 'Dag #' + dayNo;
+
+// Temat byggs av dagens färg: målfärgen plus två nyanser 60° åt var sitt håll.
+function hueOf([r, g, b]) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), d = max - Math.min(r, g, b);
+  if (!d) return 260;
+  const h = max === r ? (g - b) / d % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+  return (h * 60 + 360) % 360;
+}
+const hue = hueOf(target);
+const root = document.documentElement.style;
+root.setProperty('--target', '#' + hex(target));
+root.setProperty('--hue-a', `hsl(${(hue + 300) % 360} 85% 58%)`);
+root.setProperty('--hue-b', `hsl(${(hue + 60) % 360} 85% 55%)`);
 
 const storeKey = 'hexle-' + dayNo;
 let guesses = [];
 try { guesses = JSON.parse(localStorage.getItem(storeKey)) || []; } catch {}
+let freshRow = -1;
 
 function grade(g) {
   return g.map((v, i) => {
@@ -148,7 +241,7 @@ function render() {
   for (let i = 0; i < MAX; i++) {
     const g = guesses[i];
     const row = document.createElement('div');
-    row.className = 'row' + (g ? '' : ' empty');
+    row.className = 'row' + (g ? '' : ' empty') + (i === freshRow ? ' fresh' : '');
     const sw = document.createElement('div');
     sw.className = 'sw';
     if (g) sw.style.background = '#' + hex(g);
@@ -167,12 +260,32 @@ function render() {
   const done = won || guesses.length >= MAX;
   $('form').style.display = done ? 'none' : 'flex';
   if (done) {
-    $('msg').textContent = won ? 'Snyggt! Rätt svar: #' + hex(target) : 'Rätt svar var #' + hex(target);
+    $('headline').textContent = won ? ['Perfekt! 🎯', 'Snyggt! ✨', 'Bra jobbat!', 'Bra jobbat!', 'Puh, klarade det!', 'I sista stund! 😅'][guesses.length - 1] : 'Nära, men inte i dag';
+    $('answer').textContent = '#' + hex(target);
     const emoji = { hit: '🟩', near: '🟨', far: '⬛' };
     const grid = guesses.map(g => grade(g).map(c => emoji[c.level]).join('')).join('\n');
     $('share').textContent = `Hexle #${dayNo} ${won ? guesses.length : 'X'}/${MAX}\n${grid}`;
     $('result').classList.add('show');
+    if (won && freshRow >= 0) setTimeout(confetti, 450);
     reportAndShowStats(won);
+  }
+}
+
+function confetti() {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#' + hex(target), getComputedStyle(document.documentElement).getPropertyValue('--hue-a'),
+                  getComputedStyle(document.documentElement).getPropertyValue('--hue-b'), '#ffffff', '#22c55e'];
+  for (let i = 0; i < 90; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti';
+    p.style.left = Math.random() * 100 + 'vw';
+    p.style.background = colors[i % colors.length];
+    p.style.setProperty('--dx', (Math.random() - .5) * 200 + 'px');
+    p.style.setProperty('--rot', Math.random() * 720 + 'deg');
+    p.style.animationDuration = 1.8 + Math.random() * 1.6 + 's';
+    p.style.animationDelay = Math.random() * .4 + 's';
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
   }
 }
 
@@ -227,9 +340,15 @@ $('guess').addEventListener('input', e => {
 $('form').addEventListener('submit', e => {
   e.preventDefault();
   const v = $('guess').value;
-  if (v.length !== 6) { $('msg').textContent = 'Skriv 6 tecken (0–9, A–F)'; return; }
+  if (v.length !== 6) {
+    $('msg').textContent = 'Skriv 6 tecken (0–9, A–F)';
+    const row = $('rows').children[guesses.length];
+    row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake');
+    return;
+  }
   guesses.push([0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16)));
   try { localStorage.setItem(storeKey, JSON.stringify(guesses)); } catch {}
+  freshRow = guesses.length - 1;
   $('guess').value = '';
   $('preview').style.background = 'transparent';
   $('msg').textContent = '';
@@ -238,7 +357,7 @@ $('form').addEventListener('submit', e => {
 
 $('copy').addEventListener('click', () => {
   navigator.clipboard?.writeText($('share').textContent);
-  $('copy').textContent = 'Kopierat!';
+  $('copy').textContent = 'Kopierat! ✓';
 });
 
 render();

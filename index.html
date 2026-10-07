@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hexle</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --fg: #1d1d1f; --muted: #6e6e73; --card: #ffffff;
+    --line: #e2e1dc; --hit: #3a9d5d; --near: #d9a521; --far: #c9c8c3;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #141416; --fg: #f2f2f2; --muted: #9a9aa0; --card: #1e1e22; --line: #2e2e33; --far: #3a3a40; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex; justify-content: center; padding: 24px 16px 48px;
+  }
+  main { width: 100%; max-width: 420px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 16px; }
+  h1 { margin: 0; font-size: 28px; letter-spacing: -0.5px; }
+  h1 span { color: var(--muted); font-weight: 400; }
+  .day { color: var(--muted); font-size: 14px; }
+  .target {
+    height: 160px; border-radius: 16px; border: 1px solid var(--line);
+    display: flex; align-items: flex-end; justify-content: flex-end; padding: 10px 12px;
+  }
+  .target small { background: rgba(0,0,0,.35); color: #fff; padding: 3px 8px; border-radius: 8px; font-size: 12px; }
+  .hint { color: var(--muted); font-size: 14px; margin: 12px 0 16px; text-align: center; }
+  .rows { display: grid; gap: 8px; margin-bottom: 16px; }
+  .row { display: grid; grid-template-columns: 40px repeat(3, 1fr); gap: 8px; align-items: center; }
+  .sw { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); }
+  .cell {
+    height: 40px; border-radius: 10px; background: var(--card); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 18px; font-weight: 600;
+  }
+  .cell.hit { background: var(--hit); color: #fff; border-color: transparent; }
+  .cell.near { background: var(--near); color: #fff; border-color: transparent; }
+  .cell.far { background: var(--far); border-color: transparent; }
+  .cell .arrow { font-size: 13px; opacity: .9; }
+  .row.empty .cell { color: transparent; }
+  form { display: flex; gap: 8px; }
+  .input {
+    min-width: 0;
+    flex: 1; display: flex; align-items: center; background: var(--card);
+    border: 1px solid var(--line); border-radius: 12px; padding: 0 12px;
+  }
+  .input span { color: var(--muted); font-family: ui-monospace, Menlo, monospace; font-size: 20px; }
+  input {
+    flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg);
+    font-family: ui-monospace, Menlo, monospace; font-size: 20px; padding: 12px 4px; text-transform: uppercase;
+  }
+  button {
+    flex-shrink: 0;
+    border: 0; border-radius: 12px; padding: 0 20px; font-size: 16px; font-weight: 600;
+    background: var(--fg); color: var(--bg); cursor: pointer;
+  }
+  .preview { flex: 0 0 48px; border-radius: 12px; border: 1px solid var(--line); }
+  .msg { min-height: 20px; text-align: center; color: var(--muted); font-size: 14px; margin-top: 10px; }
+  .result { display: none; text-align: center; margin-top: 16px; }
+  .result.show { display: block; }
+  .result pre { font-size: 18px; line-height: 1.3; margin: 8px 0 12px; }
+  .legend { display: flex; justify-content: center; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 20px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Hexle<span>#</span></h1>
+    <div class="day" id="day"></div>
+  </header>
+
+  <div class="target" id="target"><small>Dagens färg</small></div>
+  <p class="hint">Gissa färgens hexkod. 6 försök.</p>
+
+  <div class="rows" id="rows"></div>
+
+  <form id="form" autocomplete="off">
+    <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false"></div>
+    <div class="preview" id="preview"></div>
+    <button type="submit">Gissa</button>
+  </form>
+  <div class="msg" id="msg"></div>
+
+  <div class="result" id="result">
+    <pre id="share"></pre>
+    <button type="button" id="copy" style="padding:12px 20px">Kopiera resultat</button>
+  </div>
+
+  <div class="legend">
+    <span><i style="background:var(--hit)"></i>±8</span>
+    <span><i style="background:var(--near)"></i>±32</span>
+    <span><i style="background:var(--far)"></i>längre bort</span>
+    <span>▲▼ högre/lägre</span>
+  </div>
+</main>
+
+<script>
+const MAX = 6;
+const EPOCH = Date.UTC(2026, 0, 1);
+
+// Dagens nummer och färg räknas fram från datumet, så alla får samma pussel.
+const now = new Date();
+const dayNo = Math.floor((Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) - EPOCH) / 864e5) + 1;
+
+function mulberry32(a) {
+  return () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rand = mulberry32(dayNo * 2654435761);
+const target = [0, 0, 0].map(() => Math.floor(rand() * 256));
+const hex = c => c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+const $ = id => document.getElementById(id);
+$('day').textContent = '#' + dayNo;
+$('target').style.background = '#' + hex(target);
+
+const storeKey = 'hexle-' + dayNo;
+let guesses = [];
+try { guesses = JSON.parse(localStorage.getItem(storeKey)) || []; } catch {}
+
+function grade(g) {
+  return g.map((v, i) => {
+    const d = target[i] - v;
+    const level = Math.abs(d) <= 8 ? 'hit' : Math.abs(d) <= 32 ? 'near' : 'far';
+    return { v, level, dir: level === 'hit' ? '' : d > 0 ? '▲' : '▼' };
+  });
+}
+
+function render() {
+  const rows = $('rows');
+  rows.innerHTML = '';
+  for (let i = 0; i < MAX; i++) {
+    const g = guesses[i];
+    const row = document.createElement('div');
+    row.className = 'row' + (g ? '' : ' empty');
+    const sw = document.createElement('div');
+    sw.className = 'sw';
+    if (g) sw.style.background = '#' + hex(g);
+    row.appendChild(sw);
+    const cells = g ? grade(g) : [{}, {}, {}];
+    cells.forEach(c => {
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (c.level ? ' ' + c.level : '');
+      cell.innerHTML = g ? `${c.v.toString(16).padStart(2, '0').toUpperCase()}<span class="arrow">${c.dir}</span>` : '··';
+      row.appendChild(cell);
+    });
+    rows.appendChild(row);
+  }
+
+  const won = guesses.some(g => grade(g).every(c => c.level === 'hit'));
+  const done = won || guesses.length >= MAX;
+  $('form').style.display = done ? 'none' : 'flex';
+  if (done) {
+    $('msg').textContent = won ? 'Snyggt! Rätt svar: #' + hex(target) : 'Rätt svar var #' + hex(target);
+    const emoji = { hit: '🟩', near: '🟨', far: '⬛' };
+    const grid = guesses.map(g => grade(g).map(c => emoji[c.level]).join('')).join('\n');
+    $('share').textContent = `Hexle #${dayNo} ${won ? guesses.length : 'X'}/${MAX}\n${grid}`;
+    $('result').classList.add('show');
+  }
+}
+
+$('guess').addEventListener('input', e => {
+  e.target.value = e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase();
+  $('preview').style.background = e.target.value.length === 6 ? '#' + e.target.value : 'transparent';
+});
+
+$('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = $('guess').value;
+  if (v.length !== 6) { $('msg').textContent = 'Skriv 6 tecken (0–9, A–F)'; return; }
+  guesses.push([0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16)));
+  try { localStorage.setItem(storeKey, JSON.stringify(guesses)); } catch {}
+  $('guess').value = '';
+  $('preview').style.background = 'transparent';
+  $('msg').textContent = '';
+  render();
+});
+
+$('copy').addEventListener('click', () => {
+  navigator.clipboard?.writeText($('share').textContent);
+  $('copy').textContent = 'Kopierat!';
+});
+
+render();
+</script>
+</body>
+</html>

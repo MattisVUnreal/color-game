@@ -88,17 +88,17 @@
 
   .rows { display: grid; gap: 10px; margin-bottom: 18px; }
   .row { display: grid; grid-template-columns: 42px repeat(3, 1fr); gap: 12px; align-items: center; }
-  .sw { width: 42px; height: 42px; border-radius: 10px; border: 1.5px solid var(--blue-line); background: color-mix(in srgb, var(--deep) 60%, transparent); }
+  .sw { width: 42px; height: 50px; border-radius: 10px; border: 1.5px solid var(--blue-line); background: color-mix(in srgb, var(--deep) 60%, transparent); }
   .cell {
-    height: 42px; border-radius: 12px; background: var(--tile); color: hsl(var(--h) 70% 22%);
+    height: 50px; border-radius: 12px; background: var(--tile); color: hsl(var(--h) 70% 22%);
     box-shadow: 0 0 14px color-mix(in srgb, var(--blue-soft) 55%, transparent), inset 0 -3px 0 color-mix(in srgb, var(--deep) 12%, transparent);
-    display: flex; align-items: center; justify-content: center; gap: 4px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.1;
     font-family: "JetBrains Mono", monospace; font-size: 18px; font-weight: 700;
   }
   .cell.hit  { background: linear-gradient(160deg, #4ade80, var(--hit)); color: #04210f; box-shadow: 0 0 16px rgba(34, 197, 94, .7); }
   .cell.near { background: linear-gradient(160deg, #ffe066, var(--near)); color: #2a1800; box-shadow: 0 0 16px rgba(255, 198, 26, .7); }
   .cell.far  { background: var(--far); color: #fff; box-shadow: 0 0 10px color-mix(in srgb, var(--blue) 35%, transparent), inset 0 0 0 1.5px var(--blue-line); }
-  .cell .arrow { font-size: 12px; opacity: .8; }
+  .cell small { font: 600 10.5px Poppins, sans-serif; opacity: .9; white-space: nowrap; margin-top: 2px; }
   .row.empty .cell { color: transparent; }
   .row.fresh .cell, .row.fresh .sw { animation: flip .5s ease both; }
   .row.fresh > :nth-child(2) { animation-delay: .1s; }
@@ -211,6 +211,7 @@
   dialog p, dialog li { font-size: 14.5px; line-height: 1.5; color: color-mix(in srgb, var(--fg) 88%, transparent); }
   dialog p { margin: 0 0 10px; }
   dialog ul { margin: 0; padding-left: 18px; }
+  dialog ul + p { margin-top: 10px; }
   dialog code { white-space: nowrap; font-family: "JetBrains Mono", monospace; background: rgba(0, 0, 0, .3); padding: 1px 5px; border-radius: 4px; }
   dialog .close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: rgba(0, 0, 0, .3); border: 0; box-shadow: none; font-size: 14px; }
   dialog .wide { width: 100%; margin-top: 20px; padding: 13px; background: linear-gradient(160deg, var(--gold-light), var(--gold)); color: #1a1200; border: 0; }
@@ -349,10 +350,10 @@
   </div>
 
   <div class="legend">
-    <span><i style="background:var(--hit)"></i>±8</span>
-    <span><i style="background:var(--near)"></i>±32</span>
+    <span><i style="background:var(--hit)"></i>rätt</span>
+    <span><i style="background:var(--near)"></i>nära</span>
     <span><i style="background:var(--far);box-shadow:inset 0 0 0 1px var(--blue-line)"></i>längre bort</span>
-    <span>▲▼ högre/lägre</span>
+    <span>↑↓ ändra ditt värde upp/ner</span>
   </div>
 </main>
 
@@ -376,10 +377,12 @@
 
   <h3>Efter varje gissning</h3>
   <ul>
-    <li><b class="tag hit">🟩</b> Mitt i prick (högst 8 ifrån)</li>
-    <li><b class="tag near">🟨</b> Nära (högst 32 ifrån)</li>
-    <li><b class="tag">▲▼</b> Värdet ska upp eller ner</li>
+    <li><b class="tag hit">🟩</b> Rätt (högst 8 ifrån). Behåll det värdet.</li>
+    <li><b class="tag near">🟨</b> Nära. Ändra lite åt pilens håll.</li>
+    <li><b class="tag">⬛</b> Långt ifrån. Ändra mycket åt pilens håll.</li>
+    <li><b class="tag">↑↓</b> Ditt värde ska <b>upp</b> eller <b>ner</b>.</li>
   </ul>
+  <p>Varje ruta gäller bara sin egen färg. Det finns inget ”fel plats” som i Wordle.</p>
 
   <h3>Tips</h3>
   <ul>
@@ -466,7 +469,9 @@ function grade(g) {
   return g.map((v, i) => {
     const d = target[i] - v;
     const level = Math.abs(d) <= 8 ? 'hit' : Math.abs(d) <= 32 ? 'near' : 'far';
-    return { v, level, dir: level === 'hit' ? '' : d > 0 ? '▲' : '▼' };
+    const way = d > 0 ? '↑' : '↓';
+    const say = level === 'hit' ? '✓ rätt' : level === 'near' ? `${way} lite ${d > 0 ? 'upp' : 'ner'}` : `${way} mycket ${d > 0 ? 'upp' : 'ner'}`;
+    return { v, level, say };
   });
 }
 const isWon = () => state.guesses.some(g => grade(g).every(c => c.level === 'hit'));
@@ -494,7 +499,7 @@ function render() {
     (g ? grade(g) : [{}, {}, {}]).forEach(c => {
       const cell = document.createElement('div');
       cell.className = 'cell' + (c.level ? ' ' + c.level : '');
-      cell.innerHTML = g ? `${pair(c.v)}<span class="arrow">${c.dir}</span>` : '··';
+      cell.innerHTML = g ? `${pair(c.v)}<small>${c.say}</small>` : '··';
       row.appendChild(cell);
     });
     rows.appendChild(row);
@@ -600,9 +605,14 @@ $('form').addEventListener('submit', e => {
   if (isDone()) state.end = Date.now();
   saveState();
   freshRow = state.guesses.length - 1;
-  $('msg').textContent = '';
+  $('msg').textContent = isDone() ? '' : coach(state.guesses[freshRow]);
   render();
 });
+
+// Säger i klartext vad nästa gissning ska göra med varje färg.
+function coach(g) {
+  return grade(g).map((c, i) => `${['Röd', 'Grön', 'Blå'][i]} ${c.level === 'hit' ? '✓' : c.say.slice(2)}`).join(' · ');
+}
 
 // --- Ledtrådar: avslöjar första tecknet i en kanal som inte redan är träffad ---
 function hitChannels() {

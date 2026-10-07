@@ -108,7 +108,8 @@
   .row.shake { animation: shake .35s; }
   @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
-  form { display: flex; gap: 10px; }
+  [hidden] { display: none !important; }
+  #form { display: flex; gap: 10px; }
   .input {
     flex: 1; min-width: 0; display: flex; align-items: center; padding: 0 14px;
     background: linear-gradient(90deg, color-mix(in srgb, var(--mid) 75%, transparent), color-mix(in srgb, var(--mid) 55%, transparent));
@@ -117,11 +118,11 @@
   }
   .input:focus-within { border-color: var(--blue-soft); box-shadow: 0 0 22px color-mix(in srgb, var(--blue-soft) 75%, transparent); }
   .input span { color: var(--muted); font-family: "JetBrains Mono", monospace; font-size: 18px; }
-  input {
+  #guess, .namebox input {
     flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--fg);
     font-family: "JetBrains Mono", monospace; font-size: 18px; padding: 13px 6px; text-transform: uppercase; letter-spacing: 1.5px;
   }
-  input::placeholder { color: color-mix(in srgb, var(--pale) 55%, transparent); }
+  #guess::placeholder, .namebox input::placeholder { color: color-mix(in srgb, var(--pale) 55%, transparent); }
   .preview { flex: 0 0 54px; border-radius: 12px; border: 1.5px solid var(--blue-line); background: color-mix(in srgb, var(--mid) 55%, transparent); }
   button {
     flex-shrink: 0; border-radius: 12px; padding: 0 26px; font: 600 17px Poppins, sans-serif; color: #fff; cursor: pointer;
@@ -141,15 +142,102 @@
   .result pre { font-size: 18px; line-height: 1.3; margin: 14px 0; font-family: "JetBrains Mono", monospace; }
   .result button { padding: 13px 26px; background: linear-gradient(160deg, var(--gold-light), var(--gold)); color: #2a1800; border-color: transparent; box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 55%, transparent); }
 
-  .stats {
-    max-width: 320px; margin: 22px auto 0; padding: 14px 16px; text-align: left; font-size: 13px; color: var(--muted);
-    background: color-mix(in srgb, var(--deep) 65%, transparent); border: 1.5px solid var(--blue-line); border-radius: 16px;
+  .toolbar { display: flex; align-items: center; gap: 10px; }
+  button.icon {
+    width: 34px; height: 34px; padding: 0; border-radius: 50%; display: grid; place-items: center;
+    font: 700 16px Poppins, sans-serif; color: var(--fg);
+    background: color-mix(in srgb, var(--deep) 60%, transparent); border: 1.5px solid var(--blue-line); box-shadow: none;
   }
-  .stats:empty { display: none; }
-  .stats p { text-align: center; margin: 0 0 10px; }
-  .bar { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; margin: 5px 0; font-family: "JetBrains Mono", monospace; }
-  .bar div { background: var(--far); color: var(--fg); border-radius: 6px; padding: 3px 8px; text-align: right; min-width: 28px; font-weight: 700; }
+  button.icon svg { fill: currentColor; }
+  button.ghost {
+    background: color-mix(in srgb, var(--deep) 60%, transparent); border: 1.5px solid var(--blue-line);
+    box-shadow: none; font-weight: 500; font-size: 15px;
+  }
+
+  .sliders {
+    display: grid; gap: 8px; margin-top: 14px; padding: 12px 14px; border-radius: 14px;
+    background: color-mix(in srgb, var(--deep) 55%, transparent); border: 1.5px solid var(--blue-line);
+  }
+  .sliders label { display: grid; grid-template-columns: 44px 1fr 28px; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+  .sliders b { font-family: "JetBrains Mono", monospace; color: var(--fg); text-align: right; }
+  .sliders input[type=range] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 14px; border-radius: 999px; margin: 0;
+    background: var(--track, #888); outline: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .15);
+  }
+  .sliders input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--thumb, #000); box-shadow: 0 0 10px rgba(0, 0, 0, .5); cursor: grab;
+  }
+  .sliders input[type=range]::-moz-range-thumb {
+    width: 18px; height: 18px; border-radius: 50%; background: #fff; border: 3px solid var(--thumb, #000); cursor: grab;
+  }
+
+  .hintbar { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+  .hintbar button { padding: 9px 14px; }
+  .hintbar button:disabled { opacity: .45; cursor: default; }
+  .clues { display: flex; gap: 8px; font-family: "JetBrains Mono", monospace; font-size: 14px; color: var(--muted); }
+  .clues span { padding: 4px 8px; border-radius: 8px; background: color-mix(in srgb, var(--deep) 60%, transparent); }
+  .clues b { color: var(--gold); }
+
+  #time { margin-left: 6px; }
+  .actions { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+  .result .actions .ghost { background: color-mix(in srgb, var(--deep) 60%, transparent); color: var(--fg); border: 1.5px solid var(--blue-line); box-shadow: none; }
+  .namebox {
+    margin: 16px auto 0; max-width: 360px; padding: 14px; border-radius: 14px;
+    background: color-mix(in srgb, var(--deep) 65%, transparent); border: 1.5px solid var(--gold);
+    box-shadow: 0 0 18px color-mix(in srgb, var(--gold) 30%, transparent);
+  }
+  .namebox p { margin: 0 0 10px; font-size: 14px; }
+  .namebox div { display: flex; gap: 8px; }
+  .namebox input {
+    flex: 1; min-width: 0; padding: 10px 12px; border-radius: 10px; letter-spacing: 0; text-transform: none;
+    font: 500 16px Poppins, sans-serif; background: rgba(0, 0, 0, .3); border: 1.5px solid var(--blue-line);
+  }
+  .result .namebox button[type=submit] { padding: 10px 18px; }
+  button.link { background: none; border: 0; box-shadow: none; color: var(--muted); font-size: 13px; font-weight: 400; padding: 8px; text-decoration: underline; }
+
+  dialog {
+    width: min(440px, calc(100vw - 32px)); max-height: calc(100vh - 40px); overflow-y: auto;
+    padding: 26px 22px 22px; border-radius: 22px; color: var(--fg);
+    background: linear-gradient(180deg, hsl(var(--h) 60% 17%), hsl(var(--h) 65% 11%));
+    border: 1.5px solid var(--blue-line); box-shadow: 0 0 40px color-mix(in srgb, var(--blue) 40%, transparent);
+  }
+  dialog::backdrop { background: rgba(0, 0, 10, .65); backdrop-filter: blur(3px); }
+  dialog[open] { animation: rise .3s ease both; }
+  dialog h2 { margin: 0 0 12px; font-size: 24px; font-weight: 800; }
+  dialog h3 { margin: 20px 0 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--gold); }
+  dialog p, dialog li { font-size: 14.5px; line-height: 1.5; color: color-mix(in srgb, var(--fg) 88%, transparent); }
+  dialog p { margin: 0 0 10px; }
+  dialog ul { margin: 0; padding-left: 18px; }
+  dialog code { white-space: nowrap; font-family: "JetBrains Mono", monospace; background: rgba(0, 0, 0, .3); padding: 1px 5px; border-radius: 4px; }
+  dialog .close { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; padding: 0; border-radius: 50%; background: rgba(0, 0, 0, .3); border: 0; box-shadow: none; font-size: 14px; }
+  dialog .wide { width: 100%; margin-top: 20px; padding: 13px; background: linear-gradient(160deg, var(--gold-light), var(--gold)); color: #1a1200; border: 0; }
+  .r { color: #ff6b6b; } .g { color: #5ee08a; } .b { color: #6ea8ff; }
+  .hexdemo { display: flex; justify-content: center; gap: 4px; margin: 6px 0 12px; font: 700 30px "JetBrains Mono", monospace; }
+  .hexdemo span { padding: 2px 8px; border-radius: 8px; background: rgba(0, 0, 0, .3); }
+  .examples { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .examples span { display: flex; align-items: center; gap: 6px; font: 500 12px "JetBrains Mono", monospace; }
+  .examples i { width: 18px; height: 18px; border-radius: 5px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .3); }
+  .tag { display: inline-block; min-width: 26px; }
+
+  .numbers { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; text-align: center; }
+  .numbers strong { display: block; font-size: 30px; font-weight: 800; line-height: 1.1; }
+  .numbers small { font-size: 11px; color: var(--muted); }
+  .bar { display: grid; grid-template-columns: 14px 1fr; gap: 8px; align-items: center; margin: 5px 0; font: 700 13px "JetBrains Mono", monospace; }
+  .bar div { background: var(--far); color: var(--fg); border-radius: 6px; padding: 3px 8px; text-align: right; min-width: 28px; }
   .bar.me div { background: linear-gradient(90deg, #4ade80, var(--hit)); color: #04210f; }
+  .muted { color: var(--muted) !important; }
+  .board-summary { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .board { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .board td { padding: 7px 6px; border-top: 1px solid color-mix(in srgb, var(--blue) 18%, transparent); }
+  .board td:first-child { width: 28px; color: var(--muted); font-family: "JetBrains Mono", monospace; }
+  .board td.num { text-align: right; font-family: "JetBrains Mono", monospace; white-space: nowrap; }
+  .board tr.me td { color: var(--gold); font-weight: 700; }
+  .board tr:nth-child(1) td:first-child { color: var(--gold); }
+  .dlg-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--blue-line); }
+  .dlg-foot small { display: block; font-size: 12px; color: var(--muted); }
+  .dlg-foot strong { font: 700 22px "JetBrains Mono", monospace; }
+  .dlg-foot button { padding: 12px 18px; background: linear-gradient(160deg, var(--gold-light), var(--gold)); color: #1a1200; border: 0; }
 
   .legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 18px; font-size: 13px; color: var(--muted); margin-top: 22px; }
   .legend i { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
@@ -208,7 +296,13 @@
       </svg>
       <h1>Hexle<span>#</span></h1>
     </div>
-    <div class="day" id="day"></div>
+    <div class="toolbar">
+      <button type="button" class="icon" id="helpBtn" aria-label="Hur spelar man?">?</button>
+      <div class="day" id="day"></div>
+      <button type="button" class="icon" id="statsBtn" aria-label="Statistik">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2" y="10" width="4" height="8" rx="1"/><rect x="8" y="5" width="4" height="13" rx="1"/><rect x="14" y="2" width="4" height="16" rx="1"/></svg>
+      </button>
+    </div>
   </header>
 
   <div class="target" id="target"><small>Dagens färg</small></div>
@@ -216,19 +310,41 @@
 
   <div class="rows" id="rows"></div>
 
-  <form id="form" autocomplete="off">
-    <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false" autocapitalize="characters"></div>
-    <div class="preview" id="preview"></div>
-    <button type="submit">Gissa</button>
-  </form>
+  <div id="play">
+    <form id="form" autocomplete="off">
+      <div class="input"><span>#</span><input id="guess" maxlength="6" placeholder="A1B2C3" spellcheck="false" autocapitalize="characters"></div>
+      <div class="preview" id="preview"></div>
+      <button type="submit">Gissa</button>
+    </form>
+
+    <div class="sliders" id="sliders">
+      <label><span>Röd</span><input type="range" min="0" max="255" value="128" data-ch="0"><b>80</b></label>
+      <label><span>Grön</span><input type="range" min="0" max="255" value="128" data-ch="1"><b>80</b></label>
+      <label><span>Blå</span><input type="range" min="0" max="255" value="128" data-ch="2"><b>80</b></label>
+    </div>
+
+    <div class="hintbar">
+      <button type="button" class="ghost" id="hintBtn">💡 Ledtråd</button>
+      <div class="clues" id="clues"></div>
+    </div>
+  </div>
   <div class="msg" id="msg"></div>
 
   <div class="result" id="result">
     <h2 id="headline"></h2>
-    <div class="answer"><i></i><span id="answer"></span></div>
-    <pre id="share"></pre>
-    <button type="button" id="copy">Kopiera resultat</button>
-    <div class="stats" id="stats"></div>
+    <div class="answer"><i></i><span id="answer"></span><span id="time"></span></div>
+    <form class="namebox" id="namebox" hidden>
+      <p>Du klarade det! Skriv ett namn för dagens topplista:</p>
+      <div>
+        <input id="nameInput" maxlength="16" placeholder="Ditt namn" autocomplete="nickname">
+        <button type="submit">Spara</button>
+      </div>
+      <button type="button" class="link" id="skipName">Hoppa över</button>
+    </form>
+    <div class="actions">
+      <button type="button" id="copy">Dela resultat</button>
+      <button type="button" class="ghost" id="openStats">Statistik</button>
+    </div>
   </div>
 
   <div class="legend">
@@ -239,10 +355,65 @@
   </div>
 </main>
 
+<dialog id="help">
+  <button type="button" class="close" aria-label="Stäng">✕</button>
+  <h2>Hur spelar man?</h2>
+  <p>Varje dag får alla samma färg. Gissa dess <b>hexkod</b> på 6 försök.</p>
+
+  <h3>Vad är en hexkod?</h3>
+  <p>Sex tecken som säger hur mycket <b class="r">rött</b>, <b class="g">grönt</b> och <b class="b">blått</b> färgen har:</p>
+  <div class="hexdemo"><span class="r">1E</span><span class="g">06</span><span class="b">8C</span></div>
+  <p>Varje par går från <code>00</code> (inget) till <code>FF</code> (max). Man räknar <code>0 1 2 … 9 A B C D E F</code>, så <code>80</code> är ungefär hälften.</p>
+  <div class="examples">
+    <span><i style="background:#FF0000"></i>FF0000</span>
+    <span><i style="background:#00FF00"></i>00FF00</span>
+    <span><i style="background:#0000FF"></i>0000FF</span>
+    <span><i style="background:#FFFF00"></i>FFFF00</span>
+    <span><i style="background:#FFFFFF"></i>FFFFFF</span>
+    <span><i style="background:#000000"></i>000000</span>
+  </div>
+
+  <h3>Efter varje gissning</h3>
+  <ul>
+    <li><b class="tag hit">🟩</b> Mitt i prick (högst 8 ifrån)</li>
+    <li><b class="tag near">🟨</b> Nära (högst 32 ifrån)</li>
+    <li><b class="tag">▲▼</b> Värdet ska upp eller ner</li>
+  </ul>
+
+  <h3>Tips</h3>
+  <ul>
+    <li>Använd <b>reglagen</b>: de skriver koden åt dig, så du kan matcha färgen med ögat.</li>
+    <li>Ljus färg ger höga värden, mörk färg låga. Grå färger har tre lika värden.</li>
+    <li>Fastnat? Tryck <b>💡 Ledtråd</b> för att se första tecknet i en kanal (högst 3).</li>
+  </ul>
+  <button type="button" class="wide" id="helpStart">Kör!</button>
+</dialog>
+
+<dialog id="statsDlg">
+  <button type="button" class="close" aria-label="Stäng">✕</button>
+  <h2>Din statistik</h2>
+  <div class="numbers" id="numbers"></div>
+  <h3>Antal försök</h3>
+  <div id="myDist"></div>
+
+  <h3>Dagens snabbaste</h3>
+  <div id="board"><p class="muted">Klara dagens färg för att se topplistan.</p></div>
+
+  <div class="dlg-foot">
+    <div>
+      <small>Nästa färg om</small>
+      <strong id="countdown">--:--:--</strong>
+    </div>
+    <button type="button" id="copy2">Dela resultat</button>
+  </div>
+</dialog>
+
 <script src="config.js"></script>
 <script>
 const MAX = 6;
+const MAX_HINTS = 3;
 const EPOCH = Date.UTC(2026, 0, 1);
+const CHANNELS = ['R', 'G', 'B'];
 
 // Dagens nummer och färg räknas fram från datumet, så alla får samma pussel.
 const now = new Date();
@@ -258,7 +429,8 @@ function mulberry32(a) {
 }
 const rand = mulberry32(dayNo * 2654435761);
 const target = [0, 0, 0].map(() => Math.floor(rand() * 256));
-const hex = c => c.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+const pair = v => v.toString(16).padStart(2, '0').toUpperCase();
+const hex = c => c.map(pair).join('');
 
 const $ = id => document.getElementById(id);
 $('day').textContent = 'Dag #' + dayNo;
@@ -276,10 +448,18 @@ document.documentElement.style.setProperty('--target', '#' + hex(target));
 document.documentElement.style.setProperty('--h', hue);
 document.querySelector('meta[name=theme-color]').content = `hsl(${hue} 75% 12%)`;
 
+// --- Lagring (allt per webbläsare) ---
+const load = (key, fallback) => { try { return JSON.parse(localStorage.getItem(key)) ?? fallback; } catch { return fallback; } };
+const save = (key, value) => { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} };
+
 const storeKey = 'hexle-' + dayNo;
-let guesses = [];
-try { guesses = JSON.parse(localStorage.getItem(storeKey)) || []; } catch {}
+let state = load(storeKey, {});
+if (Array.isArray(state)) state = { guesses: state };        // äldre format: bara gissningar
+state = { guesses: [], hints: [], start: null, end: null, sent: false, ...state };
+const saveState = () => save(storeKey, state);
+const history = load('hexle-history', {});                   // { dag: { won, attempts } }
 let freshRow = -1;
+let dayStats = null;
 
 function grade(g) {
   return g.map((v, i) => {
@@ -288,40 +468,78 @@ function grade(g) {
     return { v, level, dir: level === 'hit' ? '' : d > 0 ? '▲' : '▼' };
   });
 }
+const isWon = () => state.guesses.some(g => grade(g).every(c => c.level === 'hit'));
+const isDone = () => isWon() || state.guesses.length >= MAX;
+const elapsed = () => state.start && state.end ? Math.max(1000, state.end - state.start) : null;
+const fmtTime = ms => { const s = Math.round(ms / 1000); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
 
+// Tiden startar vid första interaktionen, och överlever omladdning.
+function startClock() {
+  if (!state.start && !isDone()) { state.start = Date.now(); saveState(); }
+}
+
+// --- Spelplanen ---
 function render() {
   const rows = $('rows');
   rows.innerHTML = '';
   for (let i = 0; i < MAX; i++) {
-    const g = guesses[i];
+    const g = state.guesses[i];
     const row = document.createElement('div');
     row.className = 'row' + (g ? '' : ' empty') + (i === freshRow ? ' fresh' : '');
     const sw = document.createElement('div');
     sw.className = 'sw';
     if (g) sw.style.background = '#' + hex(g);
     row.appendChild(sw);
-    const cells = g ? grade(g) : [{}, {}, {}];
-    cells.forEach(c => {
+    (g ? grade(g) : [{}, {}, {}]).forEach(c => {
       const cell = document.createElement('div');
       cell.className = 'cell' + (c.level ? ' ' + c.level : '');
-      cell.innerHTML = g ? `${c.v.toString(16).padStart(2, '0').toUpperCase()}<span class="arrow">${c.dir}</span>` : '··';
+      cell.innerHTML = g ? `${pair(c.v)}<span class="arrow">${c.dir}</span>` : '··';
       row.appendChild(cell);
     });
     rows.appendChild(row);
   }
+  renderClues();
 
-  const won = guesses.some(g => grade(g).every(c => c.level === 'hit'));
-  const done = won || guesses.length >= MAX;
-  $('form').style.display = done ? 'none' : 'flex';
-  if (done) {
-    $('headline').textContent = won ? ['Perfekt! 🎯', 'Snyggt! ✨', 'Bra jobbat!', 'Bra jobbat!', 'Puh, klarade det!', 'I sista stund! 😅'][guesses.length - 1] : 'Nära, men inte i dag';
-    $('answer').textContent = '#' + hex(target);
-    const emoji = { hit: '🟩', near: '🟨', far: '⬛' };
-    const grid = guesses.map(g => grade(g).map(c => emoji[c.level]).join('')).join('\n');
-    $('share').textContent = `Hexle #${dayNo} ${won ? guesses.length : 'X'}/${MAX}\n${grid}`;
-    $('result').classList.add('show');
-    if (won && freshRow >= 0) setTimeout(confetti, 450);
-    reportAndShowStats(won);
+  const won = isWon();
+  const done = isDone();
+  $('play').hidden = done;
+  if (!done) return;
+
+  $('headline').textContent = won
+    ? ['Perfekt! 🎯', 'Snyggt! ✨', 'Bra jobbat!', 'Bra jobbat!', 'Puh, klarade det!', 'I sista stund! 😅'][state.guesses.length - 1]
+    : 'Nära, men inte i dag';
+  $('answer').textContent = '#' + hex(target);
+  $('time').textContent = won && elapsed() ? `· ⏱ ${fmtTime(elapsed())}` : '';
+  $('result').classList.add('show');
+  history[dayNo] = { won, attempts: state.guesses.length };
+  save('hexle-history', history);
+
+  const freshFinish = freshRow >= 0;
+  if (won && freshFinish) setTimeout(confetti, 450);
+
+  // Vinnare utan sparat namn får välja namn innan resultatet skickas.
+  if (won && !state.sent && !load('hexle-name', null) && hasDb()) {
+    $('namebox').hidden = false;
+    if (freshFinish) setTimeout(() => $('nameInput').focus(), 600);
+  } else {
+    submitResult().then(() => { if (freshFinish) setTimeout(openStats, won ? 1600 : 700); });
+  }
+}
+
+function shareText() {
+  const emoji = { hit: '🟩', near: '🟨', far: '⬛' };
+  const grid = state.guesses.map(g => grade(g).map(c => emoji[c.level]).join('')).join('\n');
+  const extras = [isWon() && elapsed() ? `⏱${fmtTime(elapsed())}` : '', state.hints.length ? `💡${state.hints.length}` : ''].filter(Boolean).join(' ');
+  return `Hexle #${dayNo} ${isWon() ? state.guesses.length : 'X'}/${MAX}${extras ? ' ' + extras : ''}\n${grid}\n${location.href.split('?')[0]}`;
+}
+
+function share(btn) {
+  const text = shareText();
+  if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+    navigator.share({ text }).catch(() => {});
+  } else {
+    navigator.clipboard?.writeText(text);
+    btn.textContent = 'Kopierat! ✓';
   }
 }
 
@@ -343,78 +561,227 @@ function confetti() {
   }
 }
 
-// Valfri global statistik via Supabase (se config.js och supabase/schema.sql).
-let statsStarted = false;
-async function reportAndShowStats(won) {
-  const cfg = window.HEXLE_CONFIG || {};
-  if (statsStarted || !cfg.supabaseUrl || !cfg.supabaseKey) return;
-  statsStarted = true;
-  try {
-    const { createClient } = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm');
-    const db = createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false } });
-
-    let playerId = null;
-    try { playerId = localStorage.getItem('hexle-player'); } catch {}
-    if (!playerId) {
-      playerId = crypto.randomUUID();
-      try { localStorage.setItem('hexle-player', playerId); } catch {}
-    }
-
-    // Unikt per spelare och dag i databasen, så en omladdning räknas inte två gånger.
-    const { error } = await db.from('results').insert({
-      game: 'hexle', day: dayNo, player_id: playerId, attempts: guesses.length, won,
-    });
-    if (error && error.code !== '23505') throw error;
-
-    const { data, error: statsError } = await db.rpc('day_stats', { p_game: 'hexle', p_day: dayNo });
-    if (statsError) throw statsError;
-    renderStats(data, won);
-  } catch (err) {
-    console.warn('Hexle-statistik otillgänglig:', err);
-  }
+// --- Inmatning: textfält och reglage hålls i synk ---
+const sliders = [...document.querySelectorAll('#sliders input')];
+function current() { return sliders.map(s => +s.value); }
+function paintSliders() {
+  const c = current();
+  sliders.forEach((s, i) => {
+    const lo = [...c], hi = [...c];
+    lo[i] = 0; hi[i] = 255;
+    s.style.setProperty('--track', `linear-gradient(90deg, rgb(${lo}), rgb(${hi}))`);
+    s.style.setProperty('--thumb', `rgb(${c})`);
+    s.nextElementSibling.textContent = pair(c[i]);
+  });
 }
-
-function renderStats(s, won) {
-  const pct = s.players ? Math.round(100 * s.wins / s.players) : 0;
-  const max = Math.max(1, ...Object.values(s.dist));
-  let html = `<p>${s.players} spelare idag · ${pct}% klarade den</p>`;
-  for (let n = 1; n <= MAX; n++) {
-    const count = s.dist[n] || 0;
-    const me = won && guesses.length === n ? ' me' : '';
-    html += `<div class="bar${me}"><span>${n}</span><div style="width:${Math.max(8, 100 * count / max)}%">${count}</div></div>`;
-  }
-  $('stats').innerHTML = html;
+function setPreview(value) {
+  $('preview').style.background = value.length === 6 ? '#' + value : '';
 }
-
+sliders.forEach(s => s.addEventListener('input', () => {
+  startClock();
+  const v = hex(current());
+  $('guess').value = v;
+  setPreview(v);
+  paintSliders();
+}));
 $('guess').addEventListener('input', e => {
-  e.target.value = e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase();
-  $('preview').style.background = e.target.value.length === 6 ? '#' + e.target.value : 'transparent';
+  startClock();
+  const v = e.target.value = e.target.value.replace(/[^0-9a-f]/gi, '').toUpperCase();
+  setPreview(v);
+  if (v.length === 6) { [0, 2, 4].forEach((p, i) => sliders[i].value = parseInt(v.slice(p, p + 2), 16)); paintSliders(); }
 });
 
 $('form').addEventListener('submit', e => {
   e.preventDefault();
   const v = $('guess').value;
-  if (v.length !== 6) {
-    $('msg').textContent = 'Skriv 6 tecken (0–9, A–F)';
-    const row = $('rows').children[guesses.length];
-    row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake');
-    return;
-  }
-  guesses.push([0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16)));
-  try { localStorage.setItem(storeKey, JSON.stringify(guesses)); } catch {}
-  freshRow = guesses.length - 1;
-  $('guess').value = '';
-  $('preview').style.background = 'transparent';
+  const row = $('rows').children[state.guesses.length];
+  const fail = text => { $('msg').textContent = text; row.classList.remove('shake'); void row.offsetWidth; row.classList.add('shake'); };
+  if (v.length !== 6) return fail('Skriv 6 tecken (0–9, A–F), eller använd reglagen');
+  const last = state.guesses[state.guesses.length - 1];
+  if (last && hex(last) === v) return fail('Den har du redan gissat. Flytta ett reglage!');
+  startClock();
+  state.guesses.push([0, 2, 4].map(i => parseInt(v.slice(i, i + 2), 16)));
+  if (isDone()) state.end = Date.now();
+  saveState();
+  freshRow = state.guesses.length - 1;
   $('msg').textContent = '';
   render();
 });
 
-$('copy').addEventListener('click', () => {
-  navigator.clipboard?.writeText($('share').textContent);
-  $('copy').textContent = 'Kopierat! ✓';
+// --- Ledtrådar: avslöjar första tecknet i en kanal som inte redan är träffad ---
+function hitChannels() {
+  return new Set(state.guesses.flatMap(g => grade(g).map((c, i) => c.level === 'hit' ? i : -1)).filter(i => i >= 0));
+}
+function renderClues() {
+  const hits = hitChannels();
+  $('clues').innerHTML = state.hints.map(i => `<span>${CHANNELS[i]} <b>${pair(target[i])[0]}</b>·</span>`).join('');
+  const left = MAX_HINTS - state.hints.length;
+  const available = [0, 1, 2].some(i => !state.hints.includes(i) && !hits.has(i));
+  $('hintBtn').disabled = !left || !available;
+  $('hintBtn').textContent = left ? `💡 Ledtråd (${left} kvar)` : '💡 Inga ledtrådar kvar';
+}
+$('hintBtn').addEventListener('click', () => {
+  const hits = hitChannels();
+  const ch = [0, 1, 2].find(i => !state.hints.includes(i) && !hits.has(i));
+  if (ch === undefined) return;
+  startClock();
+  state.hints.push(ch);
+  saveState();
+  renderClues();
+  $('msg').textContent = `${['Röd', 'Grön', 'Blå'][ch]} börjar på ${pair(target[ch])[0]}`;
 });
 
+// --- Supabase: skicka resultat och hämta dagens statistik ---
+const cfg = window.HEXLE_CONFIG || {};
+const hasDb = () => !!(cfg.supabaseUrl && cfg.supabaseKey);
+let dbPromise = null;
+function db() {
+  dbPromise ||= import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm')
+    .then(({ createClient }) => createClient(cfg.supabaseUrl, cfg.supabaseKey, { auth: { persistSession: false } }));
+  return dbPromise;
+}
+function playerId() {
+  let id = load('hexle-player', null);
+  if (!id) { id = crypto.randomUUID(); save('hexle-player', id); }
+  return id;
+}
+
+async function submitResult() {
+  if (!hasDb()) return;
+  try {
+    const client = await db();
+    if (!state.sent) {
+      const won = isWon();
+      const name = won ? load('hexle-name', null) : null;
+      const { error } = await client.from('results').insert({
+        game: 'hexle', day: dayNo, player_id: playerId(), attempts: state.guesses.length, won,
+        time_ms: won ? elapsed() : null, name, hints: state.hints.length,
+      });
+      // 23505 = redan skickat (t.ex. från en annan flik), det är okej.
+      if (error && error.code !== '23505') throw error;
+      state.sent = true;
+      saveState();
+    }
+    const { data, error } = await client.rpc('day_stats', { p_game: 'hexle', p_day: dayNo, p_player: playerId() });
+    if (error) throw error;
+    dayStats = data;
+    renderBoard();
+  } catch (err) {
+    console.warn('Hexle-statistik otillgänglig:', err);
+  }
+}
+
+$('namebox').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('nameInput').value.trim().slice(0, 16);
+  if (!name) { $('nameInput').focus(); return; }
+  save('hexle-name', name);
+  $('namebox').hidden = true;
+  submitResult().then(openStats);
+});
+$('skipName').addEventListener('click', () => {
+  $('namebox').hidden = true;
+  submitResult().then(openStats);
+});
+
+// --- Statistikrutan ---
+function streaks() {
+  let current = 0, best = 0, run = 0;
+  const days = Object.keys(history).map(Number).sort((a, b) => a - b);
+  let prev = null;
+  for (const d of days) {
+    run = history[d].won && prev !== null && d === prev + 1 && run > 0 ? run + 1 : history[d].won ? 1 : 0;
+    best = Math.max(best, run);
+    prev = d;
+  }
+  // Nuvarande streak räknas bakåt från idag (eller igår, om dagens inte är spelad än).
+  let d = history[dayNo] ? dayNo : dayNo - 1;
+  while (history[d]?.won) { current++; d--; }
+  return { current, best };
+}
+
+function renderMyStats() {
+  const games = Object.values(history);
+  const wins = games.filter(g => g.won);
+  const { current, best } = streaks();
+  const pct = games.length ? Math.round(100 * wins.length / games.length) : 0;
+  $('numbers').innerHTML = [[games.length, 'Spelade'], [pct, 'Vinst %'], [current, 'Streak 🔥'], [best, 'Bästa streak']]
+    .map(([n, label]) => `<div><strong>${n}</strong><small>${label}</small></div>`).join('');
+
+  const dist = {};
+  wins.forEach(g => dist[g.attempts] = (dist[g.attempts] || 0) + 1);
+  const max = Math.max(1, ...Object.values(dist));
+  const today = history[dayNo];
+  $('myDist').innerHTML = Array.from({ length: MAX }, (_, i) => i + 1).map(n => {
+    const count = dist[n] || 0;
+    const me = today?.won && today.attempts === n ? ' me' : '';
+    return `<div class="bar${me}"><span>${n}</span><div style="width:${Math.max(8, 100 * count / max)}%">${count}</div></div>`;
+  }).join('');
+}
+
+function renderBoard() {
+  const box = $('board');
+  if (!dayStats) {
+    box.innerHTML = `<p class="muted">${hasDb() ? 'Klara dagens färg för att se topplistan.' : 'Topplistan är inte aktiverad.'}</p>`;
+    return;
+  }
+  const s = dayStats;
+  const pct = s.players ? Math.round(100 * s.wins / s.players) : 0;
+  box.innerHTML = '';
+  const summary = document.createElement('p');
+  summary.className = 'board-summary';
+  summary.textContent = `${s.players} spelare idag · ${pct}% klarade den` + (s.my_pos ? ` · du är #${s.my_pos} av ${s.ranked}` : '');
+  box.appendChild(summary);
+  if (!s.fastest.length) {
+    box.insertAdjacentHTML('beforeend', '<p class="muted">Ingen har klarat dagens än. Bli först!</p>');
+    return;
+  }
+  const table = document.createElement('table');
+  table.className = 'board';
+  for (const r of s.fastest) {
+    const tr = table.insertRow();
+    if (r.me) tr.className = 'me';
+    const medal = ['🥇', '🥈', '🥉'][r.pos - 1] || r.pos;
+    [medal, r.name + (r.me ? ' (du)' : ''), `${r.attempts}/6${r.hints ? ' 💡' + r.hints : ''}`, fmtTime(r.time_ms)].forEach((text, i) => {
+      const td = tr.insertCell();
+      td.textContent = text;          // textContent: namn från andra spelare tolkas aldrig som HTML
+      if (i >= 2) td.className = 'num';
+    });
+  }
+  box.appendChild(table);
+}
+
+function tick() {
+  const n = new Date();
+  const next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1);
+  const s = Math.max(0, Math.floor((next - n) / 1000));
+  $('countdown').textContent = [s / 3600, s / 60 % 60, s % 60].map(v => String(Math.floor(v)).padStart(2, '0')).join(':');
+}
+
+function openStats() {
+  renderMyStats();
+  renderBoard();
+  $('copy2').hidden = !isDone();
+  tick();
+  if (!$('statsDlg').open) $('statsDlg').showModal();
+}
+setInterval(tick, 1000);
+
+// --- Knappar och dialoger ---
+$('helpBtn').addEventListener('click', () => $('help').showModal());
+$('helpStart').addEventListener('click', () => $('help').close());
+$('statsBtn').addEventListener('click', openStats);
+$('openStats').addEventListener('click', openStats);
+$('copy').addEventListener('click', e => share(e.currentTarget));
+$('copy2').addEventListener('click', e => share(e.currentTarget));
+document.querySelectorAll('dialog').forEach(d => {
+  d.querySelector('.close').addEventListener('click', () => d.close());
+  d.addEventListener('click', e => { if (e.target === d) d.close(); });   // klick utanför stänger
+});
+
+paintSliders();
 render();
+if (!load('hexle-seen-help', false)) { save('hexle-seen-help', true); $('help').showModal(); }
 </script>
 </body>
 </html>

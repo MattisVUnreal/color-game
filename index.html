@@ -136,8 +136,19 @@
   .result.show { display: block; animation: rise .5s ease both; }
   @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
   .result h2 { margin: 4px 0 6px; font-size: 26px; font-weight: 800; }
-  .answer { display: inline-flex; align-items: center; gap: 8px; font-family: "JetBrains Mono", monospace; color: var(--muted); }
-  .answer i { width: 16px; height: 16px; border-radius: 4px; background: var(--target); box-shadow: 0 0 10px var(--blue); }
+  .verdict { margin: 0 0 14px; color: var(--muted); }
+  .compare { display: flex; justify-content: center; gap: 14px; }
+  .compare div { display: grid; justify-items: center; gap: 4px; }
+  .compare i { width: 84px; height: 56px; border-radius: 12px; border: 1.5px solid var(--blue-line); box-shadow: 0 0 14px color-mix(in srgb, var(--blue) 40%, transparent); }
+  .compare small { font-size: 12px; color: var(--muted); }
+  .compare b { font: 700 16px "JetBrains Mono", monospace; }
+  .channels { margin: 14px auto 0; border-collapse: collapse; font-size: 14px; }
+  .channels td { padding: 5px 8px; text-align: left; }
+  .channels td.hex { font: 700 15px "JetBrains Mono", monospace; }
+  .channels td.ok { color: #4ade80; }
+  .channels td.off { color: var(--near); }
+  .time { margin: 10px 0 0; font-family: "JetBrains Mono", monospace; color: var(--muted); }
+  .time:empty { display: none; }
   .result pre { font-size: 18px; line-height: 1.3; margin: 14px 0; font-family: "JetBrains Mono", monospace; }
   .result button { padding: 13px 26px; background: linear-gradient(160deg, var(--gold-light), var(--gold)); color: #2a1800; border-color: transparent; box-shadow: 0 0 22px color-mix(in srgb, var(--gold) 55%, transparent); }
 
@@ -334,7 +345,13 @@
 
   <div class="result" id="result">
     <h2 id="headline"></h2>
-    <div class="answer"><i></i><span id="answer"></span><span id="time"></span></div>
+    <p class="verdict" id="verdict"></p>
+    <div class="compare">
+      <div><i id="cmpGuess"></i><small>Din gissning</small><b id="cmpGuessHex"></b></div>
+      <div><i id="cmpTarget"></i><small>Dagens färg</small><b id="cmpTargetHex"></b></div>
+    </div>
+    <table class="channels" id="channels"></table>
+    <p class="time" id="time"></p>
     <form class="namebox" id="namebox" hidden>
       <p>Du klarade det! Skriv ett namn för dagens topplista:</p>
       <div>
@@ -350,7 +367,7 @@
   </div>
 
   <div class="legend">
-    <span><i style="background:var(--hit)"></i>rätt</span>
+    <span><i style="background:var(--hit)"></i>nära nog</span>
     <span><i style="background:var(--near)"></i>nära</span>
     <span><i style="background:var(--far);box-shadow:inset 0 0 0 1px var(--blue-line)"></i>längre bort</span>
     <span>↑↓ ändra ditt värde upp/ner</span>
@@ -377,7 +394,7 @@
 
   <h3>Efter varje gissning</h3>
   <ul>
-    <li><b class="tag hit">🟩</b> Rätt (högst 8 ifrån). Behåll det värdet.</li>
+    <li><b class="tag hit">🟩</b> Nära nog: högst 8 ifrån räknas som rätt. Behåll det värdet.</li>
     <li><b class="tag near">🟨</b> Nära. Ändra lite åt pilens håll.</li>
     <li><b class="tag">⬛</b> Långt ifrån. Ändra mycket åt pilens håll.</li>
     <li><b class="tag">↑↓</b> Ditt värde ska <b>upp</b> eller <b>ner</b>.</li>
@@ -470,7 +487,7 @@ function grade(g) {
     const d = target[i] - v;
     const level = Math.abs(d) <= 8 ? 'hit' : Math.abs(d) <= 32 ? 'near' : 'far';
     const way = d > 0 ? '↑' : '↓';
-    const say = level === 'hit' ? '✓ rätt' : level === 'near' ? `${way} lite ${d > 0 ? 'upp' : 'ner'}` : `${way} mycket ${d > 0 ? 'upp' : 'ner'}`;
+    const say = level === 'hit' ? '✓ nära nog' : level === 'near' ? `${way} lite ${d > 0 ? 'upp' : 'ner'}` : `${way} mycket ${d > 0 ? 'upp' : 'ner'}`;
     return { v, level, say };
   });
 }
@@ -511,11 +528,7 @@ function render() {
   $('play').hidden = done;
   if (!done) return;
 
-  $('headline').textContent = won
-    ? ['Perfekt! 🎯', 'Snyggt! ✨', 'Bra jobbat!', 'Bra jobbat!', 'Puh, klarade det!', 'I sista stund! 😅'][state.guesses.length - 1]
-    : 'Nära, men inte i dag';
-  $('answer').textContent = '#' + hex(target);
-  $('time').textContent = won && elapsed() ? `· ⏱ ${fmtTime(elapsed())}` : '';
+  renderSummary(won);
   $('result').classList.add('show');
   history[dayNo] = { won, attempts: state.guesses.length };
   save('hexle-history', history);
@@ -608,6 +621,35 @@ $('form').addEventListener('submit', e => {
   $('msg').textContent = isDone() ? '' : coach(state.guesses[freshRow]);
   render();
 });
+
+// Efter avslutad omgång: sista gissningen bredvid svaret, kanal för kanal.
+function renderSummary(won) {
+  const last = state.guesses[state.guesses.length - 1];
+  const graded = grade(last);
+  const names = ['Röd', 'Grön', 'Blå'];
+  const missed = names.filter((_, i) => graded[i].level !== 'hit').map(n => n.toLowerCase() === 'röd' ? 'rött' : n.toLowerCase() === 'grön' ? 'grönt' : 'blått');
+  const allNear = graded.every(c => c.level !== 'far');
+  const list = missed.length > 1 ? missed.slice(0, -1).join(', ') + ' och ' + missed[missed.length - 1] : missed[0];
+
+  $('headline').textContent = won
+    ? ['Perfekt! 🎯', 'Snyggt! ✨', 'Bra jobbat!', 'Bra jobbat!', 'Puh, klarade det!', 'I sista stund! 😅'][state.guesses.length - 1]
+    : allNear ? 'Så nära!' : 'Inte i dag';
+  $('verdict').textContent = won
+    ? 'Alla tre färger var högst 8 ifrån, och det räknas som rätt.'
+    : `${list[0].toUpperCase() + list.slice(1)} var för långt ifrån.`;
+  $('cmpGuess').style.background = '#' + hex(last);
+  $('cmpGuessHex').textContent = '#' + hex(last);
+  $('cmpTarget').style.background = '#' + hex(target);
+  $('cmpTargetHex').textContent = '#' + hex(target);
+  $('channels').innerHTML = graded.map((c, i) => {
+    const d = c.v - target[i];
+    const status = c.level === 'hit'
+      ? (d ? `✓ nära nog (${Math.abs(d)} ifrån)` : '✓ exakt')
+      : `${d > 0 ? 'för högt' : 'för lågt'} (${Math.abs(d)} ifrån)`;
+    return `<tr><td>${names[i]}</td><td class="hex">${pair(c.v)} → ${pair(target[i])}</td><td class="${c.level === 'hit' ? 'ok' : 'off'}">${status}</td></tr>`;
+  }).join('');
+  $('time').textContent = won && elapsed() ? `⏱ ${fmtTime(elapsed())}` : '';
+}
 
 // Säger i klartext vad nästa gissning ska göra med varje färg.
 function coach(g) {
